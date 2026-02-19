@@ -2,22 +2,19 @@
 
 A transformer-based deep learning model for sentiment classification on IMDB movie reviews. This project implements a custom transformer architecture from scratch using PyTorch for binary sentiment classification (positive/negative).
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#overview)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
 - [Dataset](#dataset)
 - [Model Architecture](#model-architecture)
-- [Training](#training)
-- [Evaluation](#evaluation)
-- [Inference](#inference)
+- [Usage](#usage)
 - [API Deployment](#api-deployment)
 - [Frontend Interface](#frontend-interface)
 - [Results](#results)
-- [License](#license)
 
-## 🎯 Overview
+## Overview
 
 This project implements a transformer-based sentiment classifier that predicts whether a movie review is positive or negative. The model is built from scratch, including:
 
@@ -26,61 +23,71 @@ This project implements a transformer-based sentiment classifier that predicts w
 - Transformer Encoder Blocks
 - Custom tokenization and vocabulary building
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-RealAi/
+Imdb_Movie_Review/
 ├── README.md                  # This file
 ├── requirements.txt           # Python dependencies
-├── IMDB Dataset.csv           # Dataset file
+├── .gitignore                 # Git ignore rules
+├── .gitattributes             # Git LFS configuration
 ├── Starter Notebook.ipynb     # Complete notebook with all steps
-├── best_model.pth             # Saved model checkpoint
+├── best_model.pth             # Trained model checkpoint (Git LFS)
+├── api.py                     # FastAPI server for deployment
 │
 ├── src/                       # Source code
-│   ├── __init__.py
+│   ├── __init__.py            # Package initialization
 │   ├── model.py               # Transformer model implementation
 │   ├── data_preprocessing.py  # Data preprocessing utilities
 │   ├── train.py               # Training script
 │   └── predict.py             # Inference script
 │
-├── api.py                     # FastAPI server for deployment
-│
-├── templates/                 # Frontend templates
-│   └── index.html             # Web interface
-│
-└── saved_models/              # Saved model files (generated after training)
-    ├── sentiment_model.pth
-    ├── vocab.json
-    └── model_config.json
+└── templates/                 # Frontend templates
+    └── index.html             # Web interface
 ```
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
 - Python 3.8 or higher
-- CUDA (optional, for GPU acceleration)
+- Git LFS (for downloading the model file)
 
 ### Setup
 
-1. **Clone the repository:**
+1. **Install Git LFS (required for model download):**
    ```bash
-   git clone <repository-url>
-   cd RealAi
+   # Ubuntu/Debian
+   sudo apt-get install git-lfs
+   
+   # macOS
+   brew install git-lfs
+   
+   # Windows
+   # Download from https://git-lfs.github.com/
+   
+   # Initialize Git LFS
+   git lfs install
    ```
 
-2. **Create a virtual environment (recommended):**
+2. **Clone the repository:**
    ```bash
-   python -m venv venv
+   git clone https://github.com/V1629/Imdb_Movie_Review.git
+   cd Imdb_Movie_Review
+   ```
+
+3. **Create a virtual environment (recommended):**
+   ```bash
+   python3 -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. **Install dependencies:**
+4. **Install dependencies:**
    ```bash
    pip install -r requirements.txt
    ```
 
-## 📊 Dataset
+## Dataset
 
 The project uses the IMDB Movie Reviews dataset containing 50,000 reviews labeled as positive or negative.
 
@@ -89,24 +96,29 @@ The project uses the IMDB Movie Reviews dataset containing 50,000 reviews labele
   - `review`: Text of the movie review
   - `sentiment`: Label (positive/negative)
 
-Place the downloaded `IMDB Dataset.csv` file in the project root directory.
+Place the downloaded `IMDB Dataset.csv` file in the project root directory for training.
 
-## 🏗️ Model Architecture
+> **Note:** The dataset is not included in the repository due to size constraints.
+
+## Model Architecture
 
 The model uses a custom Transformer encoder architecture:
 
 ```
 Input Token Indices
-        ↓
+        │
+        ▼
 ┌─────────────────┐
 │   Embedding     │  (vocab_size → d_model=256)
 └────────┬────────┘
-         ↓
+         │
+         ▼
 ┌─────────────────┐
 │   Positional    │  (Sinusoidal encoding)
 │   Encoding      │
 └────────┬────────┘
-         ↓
+         │
+         ▼
 ┌─────────────────────────────────────┐
 │   Transformer Encoder Block (x4)   │
 │   ├── Multi-Head Attention (8 heads)│
@@ -114,28 +126,24 @@ Input Token Indices
 │   ├── Feed-Forward Network          │
 │   └── Add & LayerNorm               │
 └─────────────────────────────────────┘
-         ↓
+         │
+         ▼
 ┌─────────────────┐
 │  Global Average │  (Masked pooling)
 │    Pooling      │
 └────────┬────────┘
-         ↓
+         │
+         ▼
 ┌─────────────────┐
 │  Classification │  (d_model → d_model//2 → 2)
 │      Head       │
 └────────┬────────┘
-         ↓
+         │
+         ▼
 Output Logits (Positive/Negative)
 ```
 
-### Key Components:
-
-- **Multi-Head Self-Attention:** 8 attention heads for capturing different aspects of relationships
-- **Positional Encoding:** Sinusoidal encodings for sequence position information
-- **Feed-Forward Network:** Position-wise MLP with GELU activation
-- **Layer Normalization:** For stable training with residual connections
-
-### Hyperparameters:
+### Hyperparameters
 
 | Parameter | Value |
 |-----------|-------|
@@ -147,60 +155,34 @@ Output Logits (Positive/Negative)
 | dropout | 0.1 |
 | vocab_size | ~25,000 |
 
-## 🎓 Training
+## Usage
 
-### Using the Training Script
+### Command Line Prediction
 
+**Single prediction:**
 ```bash
-python src/train.py --data_path "IMDB Dataset.csv" --epochs 10 --batch_size 32 --learning_rate 1e-4
+python3 src/predict.py --text "This movie was absolutely fantastic! Great acting and story."
 ```
 
-### Training Options
-
-| Argument | Default | Description |
-|----------|---------|-------------|
-| `--data_path` | `IMDB Dataset.csv` | Path to the dataset |
-| `--epochs` | 10 | Number of training epochs |
-| `--batch_size` | 32 | Batch size for training |
-| `--learning_rate` | 1e-4 | Learning rate |
-| `--max_length` | 256 | Maximum sequence length |
-| `--d_model` | 256 | Model dimension |
-| `--num_heads` | 8 | Number of attention heads |
-| `--num_layers` | 4 | Number of transformer layers |
-| `--save_path` | `saved_models/` | Path to save model checkpoints |
-
-### Using the Notebook
-
-Alternatively, run all cells in `Starter Notebook.ipynb` for an interactive training experience with visualizations.
-
-## 📈 Evaluation
-
-The model is evaluated using the following metrics:
-
-- **Accuracy:** Overall correct predictions
-- **Precision:** True positive rate among positive predictions
-- **Recall:** True positive rate among actual positives
-- **F1 Score:** Harmonic mean of precision and recall
-- **Confusion Matrix:** Visual representation of predictions vs actuals
-
-### Run Evaluation
-
+**Interactive mode:**
 ```bash
-python src/train.py --evaluate_only --model_path saved_models/sentiment_model.pth
+python3 src/predict.py --interactive
 ```
 
-## 🔮 Inference
-
-### Using the Prediction Script
-
-```bash
-python src/predict.py --text "This movie was absolutely fantastic! Great acting and amazing story."
+**Example output:**
 ```
+============================================================
+SENTIMENT PREDICTION RESULT
+============================================================
 
-### Interactive Mode
+Review: This movie was absolutely fantastic!
 
-```bash
-python src/predict.py --interactive
+Predicted Sentiment: POSITIVE
+Confidence: 87.50%
+
+   Positive Probability: 87.50%
+   Negative Probability: 12.50%
+============================================================
 ```
 
 ### Python API
@@ -209,7 +191,7 @@ python src/predict.py --interactive
 from src.predict import SentimentPredictor
 
 # Initialize predictor
-predictor = SentimentPredictor("saved_models/sentiment_model.pth")
+predictor = SentimentPredictor("best_model.pth")
 
 # Predict sentiment
 result = predictor.predict("This movie was fantastic!")
@@ -217,19 +199,36 @@ print(f"Sentiment: {result['sentiment']}")
 print(f"Confidence: {result['confidence']:.2%}")
 ```
 
-## 🌐 API Deployment
+### Training (Optional)
+
+If you want to retrain the model:
+
+```bash
+python3 src/train.py --data_path "IMDB Dataset.csv" --epochs 10 --batch_size 32
+```
+
+**Training options:**
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--data_path` | `IMDB Dataset.csv` | Path to the dataset |
+| `--epochs` | 10 | Number of training epochs |
+| `--batch_size` | 32 | Batch size for training |
+| `--learning_rate` | 1e-4 | Learning rate |
+| `--max_length` | 256 | Maximum sequence length |
+| `--save_path` | `saved_models/` | Path to save checkpoints |
+
+## API Deployment
 
 The project includes a FastAPI server for model deployment.
 
 ### Start the API Server
 
 ```bash
-# Start the server
-python api.py
-
-# Or using uvicorn directly
-uvicorn api:app --host 0.0.0.0 --port 8000 --reload
+python3 api.py
 ```
+
+The server will start at `http://localhost:8000`
 
 ### API Endpoints
 
@@ -238,18 +237,19 @@ uvicorn api:app --host 0.0.0.0 --port 8000 --reload
 | `/` | GET | Web interface |
 | `/predict` | POST | Predict sentiment |
 | `/health` | GET | Health check |
+| `/docs` | GET | API documentation (Swagger UI) |
 
 ### API Usage Example
 
+**Using curl:**
 ```bash
-# Using curl
 curl -X POST "http://localhost:8000/predict" \
      -H "Content-Type: application/json" \
      -d '{"text": "This movie was amazing!"}'
 ```
 
+**Using Python requests:**
 ```python
-# Using Python requests
 import requests
 
 response = requests.post(
@@ -259,8 +259,7 @@ response = requests.post(
 print(response.json())
 ```
 
-### Response Format
-
+**Response format:**
 ```json
 {
     "text": "This movie was amazing!",
@@ -271,25 +270,29 @@ print(response.json())
 }
 ```
 
-## 🖥️ Frontend Interface
+## Frontend Interface
 
 Access the web interface at `http://localhost:8000` after starting the API server.
 
-Features:
-- Clean, modern UI
+### Features
+
+- Clean, professional UI design
 - Real-time sentiment prediction
-- Confidence visualization
-- Responsive design
+- Confidence visualization with progress bars
+- Word and character count metrics
+- Example reviews for quick testing
+- Responsive design for mobile and desktop
+- Keyboard shortcut (Ctrl+Enter to analyze)
 
-## 📊 Results
+## Results
 
-### Training Results (10 epochs)
+### Model Performance
 
 | Metric | Value |
 |--------|-------|
-| Training Accuracy | ~92% |
-| Validation Accuracy | ~87% |
+| Test Accuracy | ~87% |
 | Test F1 Score | ~0.87 |
+| Model Size | 99 MB |
 
 ### Sample Predictions
 
@@ -299,7 +302,7 @@ Features:
 | "Terrible waste of time..." | Negative | 93% |
 | "Average film, nothing special..." | Negative | 62% |
 
-## 🛠️ Technical Details
+## Technical Details
 
 ### Text Preprocessing
 
@@ -308,7 +311,7 @@ Features:
 3. Remove URLs
 4. Remove special characters (keep only letters and spaces)
 5. Remove extra whitespace
-6. Tokenize and convert to indices
+6. Tokenize and convert to vocabulary indices
 7. Pad/truncate to fixed length (256 tokens)
 
 ### Training Configuration
@@ -317,18 +320,41 @@ Features:
 - **Scheduler:** Cosine Annealing LR
 - **Loss Function:** CrossEntropyLoss
 - **Gradient Clipping:** max_norm=1.0
-- **Early Stopping:** Based on validation accuracy
 
-## 📄 License
+## Git LFS Note
+
+This repository uses Git Large File Storage (LFS) for the model file (`best_model.pth`). 
+
+If you haven't installed Git LFS, the model file will not download correctly. Install it with:
+
+```bash
+# Install Git LFS
+sudo apt-get install git-lfs  # Ubuntu/Debian
+brew install git-lfs          # macOS
+
+# Initialize
+git lfs install
+
+# Pull LFS files if already cloned
+git lfs pull
+```
+
+## Requirements
+
+Key dependencies (see `requirements.txt` for full list):
+
+- torch >= 2.0.0
+- fastapi >= 0.100.0
+- uvicorn >= 0.23.0
+- pandas >= 2.0.0
+- scikit-learn >= 1.3.0
+
+## License
 
 This project is created for the RealAI Text Classification Challenge.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - IMDB dataset for movie reviews
 - PyTorch team for the deep learning framework
 - "Attention is All You Need" paper for transformer architecture
-
----
-
-**Note:** Make sure to place the `IMDB Dataset.csv` file in the project root before training.
